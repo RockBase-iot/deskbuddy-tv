@@ -1,0 +1,6 @@
+.pio
+.vscode/*
+
+# Unused generated asset libraries (currently none referenced by code)
+src/assets/icons/*
+src/assets/fonts/*
