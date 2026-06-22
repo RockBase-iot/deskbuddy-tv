@@ -41,10 +41,11 @@ static bool portalStarted = false;
 static bool configModeActive = false;
 
 static const uint32_t WIFI_RETRY_MS = 30000;
-static const char *CONFIG_AP_SSID = "DeskBuddy";
+static const char *CONFIG_AP_SSID_PREFIX = "DeskBuddy";
 static const uint32_t CONFIG_PORTAL_MS = 180000;
 static const uint32_t CONFIG_STATUS_REFRESH_MS = 1000;
-static const uint8_t EXPRESSION_COUNT = 6;
+static const uint8_t EXPRESSION_COUNT = 7;
+static char configApSsid[24] = "DeskBuddy";
 static uint32_t configModeStartedMs = 0;
 static uint32_t lastConfigStatusDrawMs = 0;
 static uint32_t lastConfigStaticDrawMs = 0;
@@ -52,6 +53,14 @@ static uint32_t lastOtaStatusDrawMs = 0;
 static uint16_t lastConfigRemainingSec = 0xffff;
 static uint8_t lastOtaProgress = 0xff;
 static bool configPortalTimedOut = false;
+
+static const char *buildConfigApSsid() {
+    uint8_t mac[6] = {0};
+    WiFi.macAddress(mac);
+    snprintf(configApSsid, sizeof(configApSsid), "%s-%02X%02X%02X",
+             CONFIG_AP_SSID_PREFIX, mac[3], mac[4], mac[5]);
+    return configApSsid;
+}
 
 static void showBootStage(const char *stage) {
     Serial.printf("[boot] %s\n", stage);
@@ -73,11 +82,12 @@ static void drawConfigPortalStatic() {
 
     tft.drawFastHLine(18, 44, 204, TFT_DARKGREY);
     tft.setTextDatum(TL_DATUM);
-    tft.setTextSize(2);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.drawString("SSID: DeskBuddy", 18, 58);
-    tft.drawString("AP:", 18, 88);
-    tft.drawString(WiFi.softAPIP().toString(), 66, 88);
+    tft.setTextSize(1);
+    tft.drawString(String("SSID: ") + configApSsid, 18, 58);
+    tft.setTextSize(2);
+    tft.drawString("AP:", 18, 86);
+    tft.drawString(WiFi.softAPIP().toString(), 66, 86);
 
     tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
     tft.setTextSize(1);
@@ -236,7 +246,7 @@ static void startConfigPortalIfNeeded() {
     lastOtaStatusDrawMs = 0;
     lastOtaProgress = 0xff;
     configPortalTimedOut = false;
-    configPortal.start(CONFIG_AP_SSID);
+    configPortal.start(buildConfigApSsid());
     portalStarted = true;
     needsRedraw = true;
     drawConfigPortalStatus(now);

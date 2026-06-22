@@ -30,8 +30,9 @@ On the **Eyes page**, long-press to cycle through the following expressions:
 2. **Round** – fully round eye  
 3. **Heart** – heart-shaped pupil  
 4. **Star** – star-shaped pupil  
-5. **Sleep** – closed eye with floating "Z"  
-6. **Angry** – angry eyebrow
+5. **Angry** – angry eyebrow  
+6. **Cute** – tall oval eyes, cheeks, and a small mouth  
+7. **Glasses** – glasses face with a subtle smile
 
 ### Touch Gestures
 
@@ -46,7 +47,7 @@ On the **Eyes page**, long-press to cycle through the following expressions:
 
 #### First use / no WiFi configured
 
-1. The device starts a hotspot named **DeskBuddy**.
+1. The device starts a hotspot named **DeskBuddy-XXXXXX** (`XXXXXX` is the last 3 bytes of the device MAC address).
 2. Connect your phone or computer to that hotspot (no password by default).
 3. Open **http://192.168.4.1** in a browser and fill in:
    - WiFi name / password
@@ -71,7 +72,7 @@ If you need to change WiFi later, long-press the touch key for 5 seconds on any 
 OTA firmware upload is **only available while the device is in WiFi Config mode**:
 
 1. Long-press the touch key for 5 seconds to enter WiFi Config mode.
-2. Connect to the **DeskBuddy** hotspot and open **http://192.168.4.1**.
+2. Connect to the **DeskBuddy-XXXXXX** hotspot and open **http://192.168.4.1**.
 3. Scroll to **OTA Update**, select the compiled `firmware.bin`, and click **Upload firmware**.
 4. Wait for the upload to complete; the device will restart automatically.
 
@@ -108,7 +109,7 @@ esptool.py --chip esp32 write_flash 0x0 .pio/build/nm-tv-154/full_image.bin
 
 | 页面 | 说明 |
 |------|------|
-| **1. 表情页** | 支持 6 种动态表情，会眨眼、会跟随角度转动。 |
+| **1. 表情页** | 支持 7 种动态表情，会眨眼、会跟随角度转动。 |
 | **2. 时钟页** | 当前时间、日期，以及设备当前 IP 地址。 |
 | **3. 当前天气** | 当前温度、天气状况、体感温度、湿度、风速、气压。 |
 | **4. 5 天预报** | 未来 5 天的日期、高低温、降雨概率和天气状况。 |
@@ -117,14 +118,15 @@ esptool.py --chip esp32 write_flash 0x0 .pio/build/nm-tv-154/full_image.bin
 
 ### 表情说明
 
-在**表情页**长按可循环切换以下 6 种表情：
+在**表情页**长按可循环切换以下 7 种表情：
 
 1. **普通** – 经典椭圆眼 + 圆形瞳孔  
 2. **圆眼** – 正圆形眼睛  
 3. **爱心** – 爱心形瞳孔  
 4. **星星** – 星星形瞳孔  
-5. **睡觉** – 闭眼并飘出 "Z"  
-6. **生气** – 生气眉毛
+5. **生气** – 生气眉毛  
+6. **萌脸** – 竖向椭圆眼、脸颊和小嘴  
+7. **眼镜** – 眼镜造型和轻微微笑
 
 ### 触摸操作
 
@@ -139,7 +141,7 @@ esptool.py --chip esp32 write_flash 0x0 .pio/build/nm-tv-154/full_image.bin
 
 #### 首次使用 / 未配置 WiFi 时
 
-1. 上电后若未配置 WiFi，设备会自动开启热点 **DeskBuddy**。
+1. 上电后若未配置 WiFi，设备会自动开启热点 **DeskBuddy-XXXXXX**（`XXXXXX` 为设备 MAC 地址后 3 个字节）。
 2. 用手机或电脑连接该热点（默认无密码）。
 3. 浏览器打开 **http://192.168.4.1**，填写以下信息并保存：
    - WiFi 名称 / 密码
@@ -164,7 +166,7 @@ esptool.py --chip esp32 write_flash 0x0 .pio/build/nm-tv-154/full_image.bin
 OTA 固件上传**仅在设备处于 WiFi 配置模式（AP 模式）时可用**：
 
 1. 长按触摸键 5 秒进入 WiFi 配置模式。
-2. 连接 **DeskBuddy** 热点，打开 **http://192.168.4.1**。
+2. 连接 **DeskBuddy-XXXXXX** 热点，打开 **http://192.168.4.1**。
 3. 在页面底部找到 **OTA Update**，选择编译好的 `firmware.bin`，点击上传。
 4. 等待上传完成，设备会自动重启。
 

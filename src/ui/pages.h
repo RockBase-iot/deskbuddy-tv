@@ -19,8 +19,9 @@ enum class EyeExpression : uint8_t {
     Round,
     Heart,
     Star,
-    Sleep,
     Angry,
+    Cute,
+    Glasses,
 };
 
 class Pages {
@@ -73,9 +74,9 @@ private:
     void drawStarPupil(TFT_eSprite &sprite, int16_t cx, int16_t cy, uint16_t color);
     void drawHeart(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t size, uint16_t color);
     void drawStar(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t radius, uint16_t color);
-    void drawSleepEye(TFT_eSprite &sprite, int16_t x, int16_t y, uint16_t color, float sleepPhase);
-    void drawSleepZ(TFT_eSprite &sprite, int16_t x, int16_t y, float sleepPhase, uint16_t color);
     void drawAngryBrow(TFT_eSprite &sprite, int16_t x, int16_t y, bool left, uint16_t color);
+    void drawCuteFace(TFT_eSprite &sprite, uint16_t color, float phase, bool blinking);
+    void drawGlassesFace(TFT_eSprite &sprite, uint16_t color, float phase, bool blinking);
     void drawClock(const AppConfig &cfg);
     void drawCurrentWeather(const AppConfig &cfg, const WeatherData &weather);
     void drawForecastIcon(int code, int16_t x, int16_t y, uint16_t color);

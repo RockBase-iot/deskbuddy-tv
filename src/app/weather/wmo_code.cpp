@@ -14,9 +14,13 @@ const char *wmo_weather_text(int code) {
         case 51: return "Light drizzle";
         case 53: return "Moderate drizzle";
         case 55: return "Dense drizzle";
+        case 56: return "Light freezing drizzle";
+        case 57: return "Dense freezing drizzle";
         case 61: return "Slight rain";
         case 63: return "Moderate rain";
         case 65: return "Heavy rain";
+        case 66: return "Light freezing rain";
+        case 67: return "Heavy freezing rain";
         case 71: return "Slight snow";
         case 73: return "Moderate snow";
         case 75: return "Heavy snow";

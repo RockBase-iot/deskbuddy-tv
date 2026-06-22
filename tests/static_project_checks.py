@@ -165,14 +165,17 @@ def test_config_portal_status_screen_persists_with_countdown():
     wifi_cpp = read("src/app/wifi/wifi_manager.cpp")
 
     for token in [
-        'CONFIG_AP_SSID = "DeskBuddy"',
+        'CONFIG_AP_SSID_PREFIX = "DeskBuddy"',
+        "buildConfigApSsid",
+        "configApSsid",
+        'snprintf(configApSsid, sizeof(configApSsid), "%s-%02X%02X%02X"',
         "CONFIG_PORTAL_MS = 180000",
         "configModeActive",
         "configModeStartedMs",
         "drawConfigPortalStatus",
         "exitConfigPortal",
         '"WiFi Config"',
-        '"SSID: DeskBuddy"',
+        '"SSID: "',
         '"AP:"',
         '"%us"',
         "drawConfigCountdown",
@@ -233,8 +236,9 @@ def test_eye_expressions_and_config_page_refresh_are_stable():
         "Round",
         "Heart",
         "Star",
-        "Sleep",
         "Angry",
+        "Cute",
+        "Glasses",
         "eyeExpression",
     ]:
         assert token in config_h or token in pages_h or token in pages_cpp
@@ -243,8 +247,9 @@ def test_eye_expressions_and_config_page_refresh_are_stable():
         "EyeExpression::Round",
         "EyeExpression::Heart",
         "EyeExpression::Star",
-        "EyeExpression::Sleep",
         "EyeExpression::Angry",
+        "EyeExpression::Cute",
+        "EyeExpression::Glasses",
     ]:
         assert token in pages_cpp
     assert "NVS_KEY_EYE_EXPRESSION" in nvs
@@ -252,12 +257,13 @@ def test_eye_expressions_and_config_page_refresh_are_stable():
     assert "prefs.putUChar(NVS_KEY_EYE_EXPRESSION" in config_cpp
     assert "drawHeart" in pages_cpp
     assert "drawStar" in pages_cpp
-    assert "drawSleepEye" in pages_cpp
     assert "drawAngryBrow" in pages_cpp
+    assert "drawCuteFace" in pages_cpp
+    assert "drawGlassesFace" in pages_cpp
     assert "drawHappyEye" not in pages_cpp
-    assert "EXPRESSION_COUNT = 6" in main
+    assert "EXPRESSION_COUNT = 7" in main
     assert "config.eyeExpression = (config.eyeExpression + 1) % EXPRESSION_COUNT" in main
-    assert 'DESKBUDDY_VERSION "0.3.2"' in version
+    assert 'DESKBUDDY_VERSION "0.3.7"' in version
     assert "lastConfigStaticDrawMs" in main
     assert "drawConfigPortalStatic" in main
     assert "drawConfigCountdown" in main
@@ -275,9 +281,9 @@ def test_eye_expressions_keep_pupils_blink_and_animation():
         "drawExpressionPupil",
         "drawHeartPupil",
         "drawStarPupil",
-        "drawSleepEye",
         "sleepPhase",
-        "drawSleepZ",
+        "drawCuteFace",
+        "drawGlassesFace",
         "FACE_W",
         "FACE_H",
     ]:
@@ -299,10 +305,9 @@ def test_eye_expressions_keep_pupils_blink_and_animation():
     assert "_eyeSprite.fillSprite(TFT_BLACK)" in draw_eyes
     assert "_eyeSprite.pushSprite(FACE_X, FACE_Y)" in draw_eyes
     assert "_tft.fillRect(0, 38, 240, 132, TFT_BLACK)" not in draw_eyes
-    assert "drawSleepZ(_eyeSprite" in draw_eyes
     assert "drawAngryBrow(_eyeSprite" in draw_eyes
     heart_body = pages_cpp.split("void Pages::drawHeart(TFT_eSprite", 1)[1].split("void Pages::drawStar(TFT_eSprite", 1)[0]
-    star_body = pages_cpp.split("void Pages::drawStar(TFT_eSprite", 1)[1].split("void Pages::drawSleepEye", 1)[0]
+    star_body = pages_cpp.split("void Pages::drawStar(TFT_eSprite", 1)[1].split("void Pages::drawAngryBrow", 1)[0]
     assert "drawFastHLine" in heart_body
     assert "fillTriangle(cx, cy" in star_body
 

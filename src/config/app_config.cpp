@@ -19,7 +19,7 @@ void loadAppConfig(AppConfig &cfg) {
     cfg.customColor565 = prefs.getUShort(NVS_KEY_CUSTOM_COLOR, cfg.customColor565);
     cfg.roundEyeMode = prefs.getBool(NVS_KEY_ROUND_EYE, cfg.roundEyeMode);
     cfg.eyeExpression = prefs.getUChar(NVS_KEY_EYE_EXPRESSION, cfg.roundEyeMode ? 1 : cfg.eyeExpression);
-    if (cfg.eyeExpression > 5) cfg.eyeExpression = 0;
+    if (cfg.eyeExpression > 6) cfg.eyeExpression = 0;
     cfg.unitsTemp = prefs.getString(NVS_KEY_UNITS_TEMP, cfg.unitsTemp);
     cfg.unitsSpeed = prefs.getString(NVS_KEY_UNITS_SPEED, cfg.unitsSpeed);
     cfg.unitsPres = prefs.getString(NVS_KEY_UNITS_PRES, cfg.unitsPres);

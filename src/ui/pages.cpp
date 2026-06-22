@@ -223,14 +223,20 @@ void Pages::drawEyes(const AppConfig &cfg, float angle) {
         _eyeSprite.fillRect(x, y + EYE_H - h, EYE_W, h, TFT_BLACK);
     };
 
-    EyeExpression expression = (EyeExpression)constrain((int)cfg.eyeExpression, 0, 5);
+    EyeExpression expression = (EyeExpression)constrain((int)cfg.eyeExpression, 0, 6);
+
+    if (expression == EyeExpression::Cute) {
+        drawCuteFace(_eyeSprite, color, sleepPhase, blinking);
+        _eyeSprite.pushSprite(FACE_X, FACE_Y);
+        return;
+    }
+    if (expression == EyeExpression::Glasses) {
+        drawGlassesFace(_eyeSprite, color, sleepPhase, blinking);
+        _eyeSprite.pushSprite(FACE_X, FACE_Y);
+        return;
+    }
 
     auto drawOne = [&](int16_t x, int16_t y, bool left) {
-        if (expression == EyeExpression::Sleep) {
-            drawSleepEye(_eyeSprite, x, y, color, sleepPhase);
-            if (!left) drawSleepZ(_eyeSprite, x + 54, y - 18, sleepPhase, color);
-            return;
-        }
         if (expression == EyeExpression::Round) {
             _eyeSprite.fillCircle(x + EYE_W / 2, y + EYE_H / 2, EYE_W / 2, color);
         } else {
@@ -312,27 +318,59 @@ void Pages::drawStar(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t radius
     sprite.fillTriangle(cx, cy, xs[8], ys[8], xs[9], ys[9], color);
 }
 
-void Pages::drawSleepEye(TFT_eSprite &sprite, int16_t x, int16_t y, uint16_t color, float sleepPhase) {
-    int16_t lineY = y + 44 + (int16_t)(sleepPhase * 5.0f);
-    sprite.drawWideLine(x + 14, lineY, x + 66, lineY, 5, color, TFT_BLACK);
-    sprite.drawWideLine(x + 14, lineY + 1, x + 28, lineY - 8, 3, color, TFT_BLACK);
-    sprite.drawWideLine(x + 52, lineY - 8, x + 66, lineY + 1, 3, color, TFT_BLACK);
-}
-
-void Pages::drawSleepZ(TFT_eSprite &sprite, int16_t x, int16_t y, float sleepPhase, uint16_t color) {
-    int16_t bob = (int16_t)(sleepPhase * 8.0f);
-    sprite.setTextDatum(MC_DATUM);
-    sprite.setTextColor(color, TFT_BLACK);
-    sprite.setTextSize(1);
-    sprite.drawString("z", x, y - bob);
-    sprite.setTextSize(2);
-    sprite.drawString("Z", x + 14, y - 10 - bob);
-}
-
 void Pages::drawAngryBrow(TFT_eSprite &sprite, int16_t x, int16_t y, bool left, uint16_t color) {
     int16_t y0 = y - 14;
     if (left) sprite.drawWideLine(x + 12, y0 + 4, x + 68, y0 + 22, 5, color, TFT_BLACK);
     else sprite.drawWideLine(x + 12, y0 + 22, x + 68, y0 + 4, 5, color, TFT_BLACK);
+}
+
+void Pages::drawCuteFace(TFT_eSprite &sprite, uint16_t color, float phase, bool blinking) {
+    int16_t bob = (int16_t)(phase * 3.0f);
+    int16_t leftX = 66;
+    int16_t rightX = 134;
+    int16_t eyeY = 42 + bob;
+
+    if (blinking) {
+        sprite.drawWideLine(leftX - 12, eyeY + 8, leftX + 12, eyeY + 8, 5, color, TFT_BLACK);
+        sprite.drawWideLine(rightX - 12, eyeY + 8, rightX + 12, eyeY + 8, 5, color, TFT_BLACK);
+    } else {
+        sprite.fillRoundRect(leftX - 13, eyeY - 24, 26, 54, 13, color);
+        sprite.fillRoundRect(rightX - 13, eyeY - 24, 26, 54, 13, color);
+        sprite.fillRoundRect(leftX - 5, eyeY - 14, 10, 34, 5, TFT_BLACK);
+        sprite.fillRoundRect(rightX - 5, eyeY - 14, 10, 34, 5, TFT_BLACK);
+    }
+
+    sprite.fillRoundRect(34, 82 + bob, 24, 12, 6, color);
+    sprite.fillRoundRect(142, 82 + bob, 24, 12, 6, color);
+    sprite.fillEllipse(100, 106 + bob, 14, 8, color);
+}
+
+void Pages::drawGlassesFace(TFT_eSprite &sprite, uint16_t color, float phase, bool blinking) {
+    int16_t bob = (int16_t)(phase * 2.0f);
+    int16_t y = 34 + bob;
+
+    sprite.fillRoundRect(38, y, 52, 50, 8, color);
+    sprite.fillRoundRect(110, y, 52, 50, 8, color);
+    sprite.fillRoundRect(44, y + 6, 40, 38, 6, TFT_BLACK);
+    sprite.fillRoundRect(116, y + 6, 40, 38, 6, TFT_BLACK);
+    sprite.drawWideLine(89, y + 20, 111, y + 20, 5, color, TFT_BLACK);
+    sprite.drawWideLine(37, y + 8, 28, y + 3, 4, color, TFT_BLACK);
+    sprite.drawWideLine(163, y + 8, 172, y + 3, 4, color, TFT_BLACK);
+
+    if (blinking) {
+        sprite.drawWideLine(56, y + 25, 72, y + 25, 4, color, TFT_BLACK);
+        sprite.drawWideLine(128, y + 25, 144, y + 25, 4, color, TFT_BLACK);
+    } else {
+        sprite.fillEllipse(64, y + 25, 10, 17, color);
+        sprite.fillEllipse(136, y + 25, 10, 17, color);
+        sprite.fillEllipse(64, y + 25, 4, 10, TFT_BLACK);
+        sprite.fillEllipse(136, y + 25, 4, 10, TFT_BLACK);
+    }
+
+    sprite.drawWideLine(86, 95 + bob, 94, 103 + bob, 4, color, TFT_BLACK);
+    sprite.drawWideLine(94, 103 + bob, 106, 105 + bob, 4, color, TFT_BLACK);
+    sprite.drawWideLine(106, 105 + bob, 116, 97 + bob, 4, color, TFT_BLACK);
+    sprite.drawArc(100, 24 + bob, 12, 9, 205, 335, color, TFT_BLACK);
 }
 
 void Pages::drawClock(const AppConfig &cfg) {
@@ -394,50 +432,104 @@ void Pages::drawCurrentWeather(const AppConfig &cfg, const WeatherData &weather)
 }
 
 void Pages::drawForecastIcon(int code, int16_t x, int16_t y, uint16_t color) {
-    if (code == 0 || code == 1) {
-        _tft.fillCircle(x, y, 6, color);
+    const uint16_t sunColor = TFT_YELLOW;
+    const uint16_t rainColor = _tft.color565(70, 180, 255);
+    const uint16_t snowColor = TFT_WHITE;
+    const uint16_t fogColor = TFT_DARKGREY;
+    const uint16_t lightningColor = TFT_YELLOW;
+
+    auto drawSun = [&](int16_t cx, int16_t cy, int16_t r) {
+        _tft.fillCircle(cx, cy, r, sunColor);
         for (int i = 0; i < 8; ++i) {
             float a = i * PI / 4.0f;
-            _tft.drawLine(x + (int)(cosf(a) * 10), y + (int)(sinf(a) * 10),
-                          x + (int)(cosf(a) * 14), y + (int)(sinf(a) * 14), color);
+            _tft.drawLine(cx + (int16_t)(cosf(a) * (r + 3)), cy + (int16_t)(sinf(a) * (r + 3)),
+                          cx + (int16_t)(cosf(a) * (r + 6)), cy + (int16_t)(sinf(a) * (r + 6)),
+                          sunColor);
         }
+    };
+
+    auto drawCloud = [&](int16_t cx, int16_t cy, uint16_t cloudColor) {
+        _tft.fillCircle(cx - 7, cy + 2, 5, cloudColor);
+        _tft.fillCircle(cx, cy - 2, 7, cloudColor);
+        _tft.fillCircle(cx + 8, cy + 2, 5, cloudColor);
+        _tft.fillRoundRect(cx - 12, cy, 24, 8, 2, cloudColor);
+    };
+
+    auto drawRain = [&](int16_t cx, int16_t cy, int drops) {
+        const int16_t xs[] = {-7, 0, 7};
+        for (int i = 0; i < drops && i < 3; ++i) {
+            _tft.drawLine(cx + xs[i] + 2, cy + 7, cx + xs[i] - 1, cy + 13, rainColor);
+        }
+    };
+
+    auto drawSnowflake = [&](int16_t cx, int16_t cy, uint16_t flakeColor) {
+        _tft.drawLine(cx - 3, cy, cx + 3, cy, flakeColor);
+        _tft.drawLine(cx, cy - 3, cx, cy + 3, flakeColor);
+        _tft.drawLine(cx - 2, cy - 2, cx + 2, cy + 2, flakeColor);
+        _tft.drawLine(cx - 2, cy + 2, cx + 2, cy - 2, flakeColor);
+    };
+
+    auto drawLightning = [&](int16_t cx, int16_t cy) {
+        _tft.fillTriangle(cx + 1, cy + 4, cx - 4, cy + 12, cx + 1, cy + 11, lightningColor);
+        _tft.fillTriangle(cx + 1, cy + 10, cx - 1, cy + 17, cx + 6, cy + 8, lightningColor);
+    };
+
+    if (code == 0 || code == 1) {
+        drawSun(x, y, 5);
         return;
     }
-    if (code == 2 || code == 3 || code == 45 || code == 48) {
-        _tft.fillCircle(x - 6, y + 2, 6, color);
-        _tft.fillCircle(x + 1, y - 3, 8, color);
-        _tft.fillCircle(x + 9, y + 2, 6, color);
-        _tft.fillRect(x - 10, y + 2, 22, 7, color);
+    if (code == 2) {
+        drawSun(x - 7, y - 5, 4);
+        drawCloud(x + 3, y + 1, color);
         return;
     }
-    if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82)) {
-        _tft.fillCircle(x - 5, y - 2, 6, color);
-        _tft.fillCircle(x + 4, y - 5, 7, color);
-        _tft.fillRect(x - 10, y - 1, 20, 6, color);
-        _tft.drawLine(x - 6, y + 9, x - 9, y + 15, TFT_BLUE);
-        _tft.drawLine(x + 1, y + 9, x - 2, y + 15, TFT_BLUE);
-        _tft.drawLine(x + 8, y + 9, x + 5, y + 15, TFT_BLUE);
+    if (code == 3) {
+        drawCloud(x, y, color);
+        _tft.drawFastHLine(x - 9, y + 10, 18, fogColor);
+        return;
+    }
+    if (code == 45 || code == 48) {
+        drawCloud(x, y - 2, color);
+        _tft.drawFastHLine(x - 12, y + 8, 24, fogColor);
+        _tft.drawFastHLine(x - 9, y + 12, 18, fogColor);
+        _tft.drawFastHLine(x - 6, y + 16, 12, fogColor);
+        return;
+    }
+    if (code >= 51 && code <= 57) {
+        drawCloud(x, y - 3, color);
+        drawRain(x, y, code >= 53 ? 3 : 2);
+        if (code >= 56) drawSnowflake(x + 11, y + 10, snowColor);
+        return;
+    }
+    if (code >= 61 && code <= 67) {
+        drawCloud(x, y - 3, color);
+        drawRain(x, y, code >= 63 ? 3 : 2);
+        if (code >= 66) drawSnowflake(x + 11, y + 10, snowColor);
         return;
     }
     if ((code >= 71 && code <= 77) || code == 85 || code == 86) {
-        _tft.drawCircle(x - 6, y, 3, color);
-        _tft.drawCircle(x + 2, y - 3, 3, color);
-        _tft.drawCircle(x + 8, y + 3, 3, color);
-        _tft.drawLine(x - 8, y + 10, x - 2, y + 16, color);
-        _tft.drawLine(x - 2, y + 10, x - 8, y + 16, color);
-        _tft.drawLine(x + 5, y + 10, x + 11, y + 16, color);
-        _tft.drawLine(x + 11, y + 10, x + 5, y + 16, color);
+        drawCloud(x, y - 4, color);
+        drawSnowflake(x - 6, y + 9, snowColor);
+        drawSnowflake(x + 6, y + 11, snowColor);
         return;
     }
-    if (code >= 95) {
-        _tft.fillCircle(x - 5, y - 3, 6, color);
-        _tft.fillCircle(x + 4, y - 5, 7, color);
-        _tft.fillRect(x - 10, y - 2, 20, 6, color);
-        _tft.fillTriangle(x, y + 4, x - 5, y + 15, x + 1, y + 12, TFT_YELLOW);
-        _tft.fillTriangle(x + 1, y + 10, x - 1, y + 22, x + 7, y + 9, TFT_YELLOW);
+    if (code >= 80 && code <= 82) {
+        drawSun(x - 7, y - 6, 3);
+        drawCloud(x + 2, y - 3, color);
+        drawRain(x, y, code == 80 ? 2 : 3);
         return;
     }
-    _tft.drawCircle(x, y, 9, color);
+    if (code >= 95 && code <= 99) {
+        drawCloud(x, y - 4, color);
+        drawLightning(x, y - 1);
+        if (code >= 96) {
+            _tft.fillCircle(x + 9, y + 10, 2, snowColor);
+            _tft.fillCircle(x - 9, y + 12, 2, snowColor);
+        }
+        return;
+    }
+    _tft.drawCircle(x, y, 8, color);
+    _tft.drawPixel(x, y, color);
 }
 
 void Pages::drawForecast(const AppConfig &cfg, const WeatherData &weather) {
@@ -465,7 +557,7 @@ void Pages::drawForecast(const AppConfig &cfg, const WeatherData &weather) {
         _tft.setTextSize(1);
         _tft.setTextColor(TFT_WHITE, TFT_BLACK);
         _tft.drawString(day, 8, y + 4);
-        drawForecastIcon(d.weather_code, 70, y + 8, accent(cfg));
+        drawForecastIcon(d.weather_code, 70, y + 10, accent(cfg));
         _tft.setTextSize(2);
         _tft.setTextColor(accent(cfg), TFT_BLACK);
         _tft.drawString(String((int)roundf(celsiusToDisplay(cfg, d.temp_min))) + "/" +
