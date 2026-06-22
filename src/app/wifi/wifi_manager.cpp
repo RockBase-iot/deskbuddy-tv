@@ -73,7 +73,7 @@ bool WifiManager::connect(const String &ssid, const String &password) {
     return true;
 }
 
-void WifiManager::syncTime(int utcOffsetMinutes) {
+bool WifiManager::syncTime(int utcOffsetMinutes) {
     long offsetSec = (long)utcOffsetMinutes * 60L;
 
     for (uint8_t si = 0; si < NTP_SERVER_CNT; si++) {
@@ -104,13 +104,14 @@ void WifiManager::syncTime(int utcOffsetMinutes) {
                   tm_info.tm_year + 1900, tm_info.tm_mon + 1, tm_info.tm_mday,
                   tm_info.tm_hour, tm_info.tm_min, tm_info.tm_sec,
                   utcOffsetMinutes / 60);
-            return;
+            return true;
         }
 
         log_w(TAG, "NTP server %s failed, trying next...", server);
     }
 
     log_e(TAG, "All NTP servers failed — continuing without time sync");
+    return false;
 }
 
 void WifiManager::stopTimeSync() {

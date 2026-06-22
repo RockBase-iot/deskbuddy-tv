@@ -136,6 +136,7 @@ def test_boot_path_is_observable_before_network():
     hal = read("src/hal/nm_tv_154_hal.cpp")
     for token in [
         "Serial.println",
+        "Serial.printf",
         "showBootStage",
         "renderStartupPattern",
         "DeskBuddy boot",
@@ -169,6 +170,8 @@ def test_config_portal_status_screen_persists_with_countdown():
         "buildConfigApSsid",
         "configApSsid",
         'snprintf(configApSsid, sizeof(configApSsid), "%s-%02X%02X%02X"',
+        "TIME_SYNC_RETRY_MS = 60000",
+        "lastTimeSyncAttempt",
         "CONFIG_PORTAL_MS = 180000",
         "configModeActive",
         "configModeStartedMs",
@@ -207,6 +210,10 @@ def test_config_portal_status_screen_persists_with_countdown():
     assert "WiFi.mode(WIFI_AP)" in web_config_cpp
     assert "WIFI_AP_STA" not in web_config_cpp
     assert "stopTimeSync" in wifi_h
+    assert "bool syncTime(int utcOffsetMinutes)" in wifi_h
+    assert "bool WifiManager::syncTime(int utcOffsetMinutes)" in wifi_cpp
+    assert "return true;" in wifi_cpp
+    assert "return false;" in wifi_cpp
     assert "void WifiManager::stopTimeSync()" in wifi_cpp
     assert "esp_sntp_enabled()" in wifi_cpp
     assert "if (esp_sntp_enabled())" in wifi_cpp
@@ -263,7 +270,7 @@ def test_eye_expressions_and_config_page_refresh_are_stable():
     assert "drawHappyEye" not in pages_cpp
     assert "EXPRESSION_COUNT = 7" in main
     assert "config.eyeExpression = (config.eyeExpression + 1) % EXPRESSION_COUNT" in main
-    assert 'DESKBUDDY_VERSION "0.3.7"' in version
+    assert 'DESKBUDDY_VERSION "0.3.8"' in version
     assert "lastConfigStaticDrawMs" in main
     assert "drawConfigPortalStatic" in main
     assert "drawConfigCountdown" in main

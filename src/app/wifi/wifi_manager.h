@@ -11,7 +11,7 @@ public:
 
     // Synchronize the system clock via SNTP.
     // utcOffsetMinutes is the UTC offset in minutes, e.g. 480 for UTC+8.
-    void syncTime(int utcOffsetMinutes);
+    bool syncTime(int utcOffsetMinutes);
 
     // Stop SNTP before WiFi mode changes that tear down lwIP interfaces.
     void stopTimeSync();
