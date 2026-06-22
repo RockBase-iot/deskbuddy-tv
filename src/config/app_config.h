@@ -13,6 +13,7 @@ struct AppConfig {
     bool colorCycleMode = true;
     uint16_t customColor565 = 0x07E0;
     bool roundEyeMode = false;
+    uint8_t eyeExpression = 0;
     String unitsTemp = "celsius";
     String unitsSpeed = "kmh";
     String unitsPres = "hpa";

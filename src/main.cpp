@@ -9,6 +9,7 @@
 #include "hal/nm_tv_154_hal.h"
 #include "input/touch_gesture.h"
 #include "ui/pages.h"
+#include "version.h"
 
 static NmTv154Hal hal;
 static TouchGesture touch;
@@ -43,9 +44,13 @@ static const uint32_t WIFI_RETRY_MS = 30000;
 static const char *CONFIG_AP_SSID = "DeskBuddy";
 static const uint32_t CONFIG_PORTAL_MS = 180000;
 static const uint32_t CONFIG_STATUS_REFRESH_MS = 1000;
+static const uint8_t EXPRESSION_COUNT = 6;
 static uint32_t configModeStartedMs = 0;
 static uint32_t lastConfigStatusDrawMs = 0;
+static uint32_t lastConfigStaticDrawMs = 0;
+static uint32_t lastOtaStatusDrawMs = 0;
 static uint16_t lastConfigRemainingSec = 0xffff;
+static uint8_t lastOtaProgress = 0xff;
 static bool configPortalTimedOut = false;
 
 static void showBootStage(const char *stage) {
@@ -58,18 +63,7 @@ static void showBootStage(const char *stage) {
     tft.drawString(stage, 120, 220);
 }
 
-static void drawConfigPortalStatus(uint32_t nowMs) {
-    uint32_t elapsedMs = nowMs - configModeStartedMs;
-    uint32_t remainingMs = elapsedMs >= CONFIG_PORTAL_MS ? 0 : CONFIG_PORTAL_MS - elapsedMs;
-    uint16_t remainingSec = (remainingMs + 999) / 1000;
-    if (!needsRedraw && lastConfigRemainingSec == remainingSec &&
-        nowMs - lastConfigStatusDrawMs < CONFIG_STATUS_REFRESH_MS) {
-        return;
-    }
-
-    lastConfigStatusDrawMs = nowMs;
-    lastConfigRemainingSec = remainingSec;
-
+static void drawConfigPortalStatic() {
     TFT_eSPI &tft = hal.display();
     tft.fillScreen(TFT_BLACK);
     tft.setTextDatum(MC_DATUM);
@@ -94,13 +88,65 @@ static void drawConfigPortalStatus(uint32_t nowMs) {
     tft.setTextColor(TFT_YELLOW, TFT_BLACK);
     tft.setTextSize(2);
     tft.drawString("TIME LEFT", 120, 170);
+    tft.setTextSize(1);
+    tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    tft.drawString(String("v") + DESKBUDDY_VERSION, 120, 232);
+}
+
+static void drawConfigCountdown(uint16_t remainingSec) {
+    TFT_eSPI &tft = hal.display();
+    tft.fillRect(70, 186, 100, 40, TFT_BLACK);
     char timeText[8];
     snprintf(timeText, sizeof(timeText), "%us", remainingSec);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
     tft.setTextSize(3);
     tft.drawString(timeText, 120, 204);
-    if (remainingSec == 180) {
-        tft.drawString("180s", 120, 204);
+}
+
+static void drawConfigPortalStatus(uint32_t nowMs) {
+    uint32_t elapsedMs = nowMs - configModeStartedMs;
+    uint32_t remainingMs = elapsedMs >= CONFIG_PORTAL_MS ? 0 : CONFIG_PORTAL_MS - elapsedMs;
+    uint16_t remainingSec = (remainingMs + 999) / 1000;
+    if (needsRedraw || lastConfigStaticDrawMs == 0) {
+        drawConfigPortalStatic();
+        lastConfigStaticDrawMs = nowMs;
+        lastConfigRemainingSec = 0xffff;
+        needsRedraw = false;
     }
+    if (!needsRedraw && lastConfigRemainingSec == remainingSec &&
+        nowMs - lastConfigStatusDrawMs < CONFIG_STATUS_REFRESH_MS) {
+        return;
+    }
+
+    lastConfigStatusDrawMs = nowMs;
+    lastConfigRemainingSec = remainingSec;
+    drawConfigCountdown(remainingSec);
+}
+
+static void drawOtaStatus(uint32_t nowMs) {
+    uint8_t progress = configPortal.otaProgress();
+    if (lastOtaProgress == progress && nowMs - lastOtaStatusDrawMs < 500) {
+        return;
+    }
+    lastOtaStatusDrawMs = nowMs;
+    lastOtaProgress = progress;
+
+    TFT_eSPI &tft = hal.display();
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextSize(2);
+    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    tft.drawString("OTA Updating", 120, 58);
+    tft.setTextSize(4);
+    tft.drawString(String(progress) + "%", 120, 112);
+    tft.drawRect(34, 154, 172, 16, TFT_DARKGREY);
+    tft.fillRect(36, 156, map(progress, 0, 100, 0, 168), 12, TFT_BLUE);
+    tft.setTextSize(1);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.drawString("Do not power off", 120, 190);
+    tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    tft.drawString(String("v") + DESKBUDDY_VERSION, 120, 226);
 }
 
 static void refreshWeatherNow() {
@@ -160,11 +206,15 @@ static void exitConfigPortal(const char *reason) {
 
 static void startConfigPortalIfNeeded() {
     uint32_t now = millis();
+    hal.display().fillScreen(TFT_BLACK);
     if (portalStarted && configPortal.isRunning()) {
         configModeActive = true;
         configModeStartedMs = now;
         lastConfigStatusDrawMs = 0;
+        lastConfigStaticDrawMs = 0;
         lastConfigRemainingSec = 0xffff;
+        lastOtaStatusDrawMs = 0;
+        lastOtaProgress = 0xff;
         needsRedraw = true;
         drawConfigPortalStatus(now);
         return;
@@ -181,7 +231,10 @@ static void startConfigPortalIfNeeded() {
     configModeActive = true;
     configModeStartedMs = now;
     lastConfigStatusDrawMs = 0;
+    lastConfigStaticDrawMs = 0;
     lastConfigRemainingSec = 0xffff;
+    lastOtaStatusDrawMs = 0;
+    lastOtaProgress = 0xff;
     configPortalTimedOut = false;
     configPortal.start(CONFIG_AP_SSID);
     portalStarted = true;
@@ -267,6 +320,11 @@ void loop() {
     touch.update(hal.touched(), now);
 
     if (configModeActive) {
+        if (configPortal.otaInProgress()) {
+            drawOtaStatus(now);
+            delay(50);
+            return;
+        }
         if (now - configModeStartedMs >= CONFIG_PORTAL_MS) {
             exitConfigPortal("timeout");
         } else {
@@ -301,12 +359,15 @@ void loop() {
         }
     }
     if (touch.wasLongPress() && currentPage == Page::Eyes) {
-        config.roundEyeMode = !config.roundEyeMode;
+        config.eyeExpression = (config.eyeExpression + 1) % EXPRESSION_COUNT;
+        config.roundEyeMode = config.eyeExpression == 1;
         saveAppConfig(config);
         needsRedraw = true;
     }
     if (touch.wasConfigPress()) {
         startConfigPortalIfNeeded();
+        delay(50);
+        return;
     }
 
     if (!wifiConnected && config.wifiSsid.length() > 0) {
@@ -314,6 +375,8 @@ void loop() {
     }
     if (!wifiConnected && !portalStarted && !configPortalTimedOut) {
         startConfigPortalIfNeeded();
+        delay(50);
+        return;
     }
     syncNetworkServicesIfReady();
     fetchWeatherIfDue();

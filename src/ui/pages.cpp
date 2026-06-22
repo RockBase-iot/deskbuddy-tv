@@ -4,9 +4,17 @@
 #include <time.h>
 #include <WiFi.h>
 #include "app/weather/wmo_code.h"
+#include "version.h"
 
 static const int16_t EYE_W = 80;
 static const int16_t EYE_H = 80;
+static const int16_t FACE_X = 20;
+static const int16_t FACE_Y = 42;
+static const int16_t FACE_W = 200;
+static const int16_t FACE_H = 132;
+static const int16_t LEFT_EYE_X = 10;
+static const int16_t RIGHT_EYE_X = 110;
+static const int16_t EYE_Y = 28;
 static const int16_t PUPIL_SIZE = 36;
 static const int16_t SCLERA_PAD = 6;
 static const int16_t CONTENT_TOP = 24;
@@ -16,7 +24,7 @@ static const int16_t CONTENT_RIGHT = 232;
 
 void Pages::begin() {
     _eyeSprite.setColorDepth(16);
-    _eyeSprite.createSprite(EYE_W, EYE_H);
+    _eyeSprite.createSprite(FACE_W, FACE_H);
     _nextBlinkMs = millis() + 2500;
 }
 
@@ -28,7 +36,10 @@ void Pages::drawStartupSplash(const AppConfig &cfg) {
     _tft.drawString("RockBase IoT", 120, 96);
     _tft.setTextColor(accent(cfg), TFT_BLACK);
     _tft.drawString("DESK-BUDDY", 120, 132);
-    delay(1000);
+    _tft.setTextSize(1);
+    _tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    _tft.drawString(String("v") + DESKBUDDY_VERSION, 120, 166);
+    delay(1500);
 }
 
 void Pages::cycleAccentSplash(const AppConfig &cfg) {
@@ -199,40 +210,129 @@ void Pages::drawEyes(const AppConfig &cfg, float angle) {
         _nextBlinkMs = now + (uint32_t)random(2500, 6000);
     }
     bool blinking = now < _blinkUntilMs;
+    float sleepPhase = (sinf(angle * 1.2f) + 1.0f) * 0.5f;
+    _eyeSprite.fillSprite(TFT_BLACK);
 
     float maxOffsetX = (EYE_W / 2.0f) - SCLERA_PAD - (PUPIL_SIZE / 2.0f);
     float maxOffsetY = (EYE_H / 2.0f) - SCLERA_PAD - (PUPIL_SIZE / 2.0f);
     int16_t offX = (int16_t)(cosf(angle) * maxOffsetX);
     int16_t offY = (int16_t)(sinf(angle * 0.5f) * maxOffsetY);
 
-    auto drawEyelid = [&](int16_t h) {
-        _eyeSprite.fillRect(0, 0, EYE_W, h, TFT_BLACK);
-        _eyeSprite.fillRect(0, EYE_H - h, EYE_W, h, TFT_BLACK);
+    auto drawEyelid = [&](int16_t x, int16_t y, int16_t h) {
+        _eyeSprite.fillRect(x, y, EYE_W, h, TFT_BLACK);
+        _eyeSprite.fillRect(x, y + EYE_H - h, EYE_W, h, TFT_BLACK);
     };
 
-    auto drawOne = [&](int16_t x, int16_t y) {
-        _eyeSprite.fillSprite(TFT_BLACK);
-        if (cfg.roundEyeMode) {
-            _eyeSprite.fillCircle(EYE_W / 2, EYE_H / 2, EYE_W / 2, color);
-        } else {
-            _eyeSprite.fillRoundRect(0, 0, EYE_W, EYE_H, 10, color);
+    EyeExpression expression = (EyeExpression)constrain((int)cfg.eyeExpression, 0, 5);
+
+    auto drawOne = [&](int16_t x, int16_t y, bool left) {
+        if (expression == EyeExpression::Sleep) {
+            drawSleepEye(_eyeSprite, x, y, color, sleepPhase);
+            if (!left) drawSleepZ(_eyeSprite, x + 54, y - 18, sleepPhase, color);
+            return;
         }
-        int16_t cx = constrain((EYE_W / 2) + offX, SCLERA_PAD + PUPIL_SIZE / 2,
-                               EYE_W - SCLERA_PAD - PUPIL_SIZE / 2);
-        int16_t cy = constrain((EYE_H / 2) + offY, SCLERA_PAD + PUPIL_SIZE / 2,
-                               EYE_H - SCLERA_PAD - PUPIL_SIZE / 2);
-        if (cfg.roundEyeMode) {
-            _eyeSprite.fillCircle(cx, cy, PUPIL_SIZE / 2, TFT_BLACK);
+        if (expression == EyeExpression::Round) {
+            _eyeSprite.fillCircle(x + EYE_W / 2, y + EYE_H / 2, EYE_W / 2, color);
         } else {
-            _eyeSprite.fillRoundRect(cx - PUPIL_SIZE / 2, cy - PUPIL_SIZE / 2,
-                                     PUPIL_SIZE, PUPIL_SIZE, 6, TFT_BLACK);
+            _eyeSprite.fillRoundRect(x, y, EYE_W, EYE_H, 10, color);
         }
-        if (blinking) drawEyelid(34);
-        _eyeSprite.pushSprite(x, y);
+        int16_t cx = x + constrain((EYE_W / 2) + offX, SCLERA_PAD + PUPIL_SIZE / 2,
+                                   EYE_W - SCLERA_PAD - PUPIL_SIZE / 2);
+        int16_t cy = y + constrain((EYE_H / 2) + offY, SCLERA_PAD + PUPIL_SIZE / 2,
+                                   EYE_H - SCLERA_PAD - PUPIL_SIZE / 2);
+        drawExpressionPupil(_eyeSprite, expression, cx, cy, TFT_BLACK);
+        if (blinking) {
+            drawEyelid(x, y, 34);
+        }
+        if (expression == EyeExpression::Angry) drawAngryBrow(_eyeSprite, x, y, left, color);
     };
 
-    drawOne(30, 70);
-    drawOne(130, 70);
+    drawOne(LEFT_EYE_X, EYE_Y, true);
+    drawOne(RIGHT_EYE_X, EYE_Y, false);
+    _eyeSprite.pushSprite(FACE_X, FACE_Y);
+}
+
+void Pages::drawExpressionPupil(TFT_eSprite &sprite, EyeExpression expression,
+                                int16_t cx, int16_t cy, uint16_t color) {
+    if (expression == EyeExpression::Heart) {
+        drawHeartPupil(sprite, cx, cy, color);
+        return;
+    }
+    if (expression == EyeExpression::Star) {
+        drawStarPupil(sprite, cx, cy, color);
+        return;
+    }
+    if (expression == EyeExpression::Round) {
+        sprite.fillCircle(cx, cy, PUPIL_SIZE / 2, color);
+        return;
+    }
+    sprite.fillRoundRect(cx - PUPIL_SIZE / 2, cy - PUPIL_SIZE / 2,
+                         PUPIL_SIZE, PUPIL_SIZE, 6, color);
+}
+
+void Pages::drawHeartPupil(TFT_eSprite &sprite, int16_t cx, int16_t cy, uint16_t color) {
+    drawHeart(sprite, cx, cy - 1, 15, color);
+    sprite.fillCircle(cx - 4, cy - 6, 2, TFT_WHITE);
+}
+
+void Pages::drawStarPupil(TFT_eSprite &sprite, int16_t cx, int16_t cy, uint16_t color) {
+    drawStar(sprite, cx, cy, 20, color);
+    sprite.fillCircle(cx - 5, cy - 5, 2, TFT_WHITE);
+}
+
+void Pages::drawHeart(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t size, uint16_t color) {
+    for (int16_t y = -size; y <= size; ++y) {
+        float yf = (float)y / (float)size;
+        float half = size * sqrtf(max(0.0f, 1.0f - yf * yf));
+        if (y < 0) {
+            half += size * 0.32f * (1.0f - fabsf(yf));
+        } else {
+            half *= 1.0f - (float)y / ((float)size * 1.18f);
+        }
+        if (half < 0) half = 0;
+        sprite.drawFastHLine(cx - (int16_t)half, cy + y, (int16_t)(half * 2.0f) + 1, color);
+    }
+    sprite.fillCircle(cx - size / 2, cy - size / 3, size / 2, color);
+    sprite.fillCircle(cx + size / 2, cy - size / 3, size / 2, color);
+}
+
+void Pages::drawStar(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t radius, uint16_t color) {
+    const int points = 10;
+    int16_t xs[points];
+    int16_t ys[points];
+    for (int i = 0; i < points; ++i) {
+        float a = -PI / 2 + i * PI / 5.0f;
+        int r = (i % 2 == 0) ? radius : radius * 0.42f;
+        xs[i] = cx + (int16_t)(cosf(a) * r);
+        ys[i] = cy + (int16_t)(sinf(a) * r);
+    }
+    for (int i = 1; i < points - 1; ++i) {
+        sprite.fillTriangle(xs[0], ys[0], xs[i], ys[i], xs[i + 1], ys[i + 1], color);
+    }
+    sprite.fillTriangle(cx, cy, xs[8], ys[8], xs[9], ys[9], color);
+}
+
+void Pages::drawSleepEye(TFT_eSprite &sprite, int16_t x, int16_t y, uint16_t color, float sleepPhase) {
+    int16_t lineY = y + 44 + (int16_t)(sleepPhase * 5.0f);
+    sprite.drawWideLine(x + 14, lineY, x + 66, lineY, 5, color, TFT_BLACK);
+    sprite.drawWideLine(x + 14, lineY + 1, x + 28, lineY - 8, 3, color, TFT_BLACK);
+    sprite.drawWideLine(x + 52, lineY - 8, x + 66, lineY + 1, 3, color, TFT_BLACK);
+}
+
+void Pages::drawSleepZ(TFT_eSprite &sprite, int16_t x, int16_t y, float sleepPhase, uint16_t color) {
+    int16_t bob = (int16_t)(sleepPhase * 8.0f);
+    sprite.setTextDatum(MC_DATUM);
+    sprite.setTextColor(color, TFT_BLACK);
+    sprite.setTextSize(1);
+    sprite.drawString("z", x, y - bob);
+    sprite.setTextSize(2);
+    sprite.drawString("Z", x + 14, y - 10 - bob);
+}
+
+void Pages::drawAngryBrow(TFT_eSprite &sprite, int16_t x, int16_t y, bool left, uint16_t color) {
+    int16_t y0 = y - 14;
+    if (left) sprite.drawWideLine(x + 12, y0 + 4, x + 68, y0 + 22, 5, color, TFT_BLACK);
+    else sprite.drawWideLine(x + 12, y0 + 22, x + 68, y0 + 4, 5, color, TFT_BLACK);
 }
 
 void Pages::drawClock(const AppConfig &cfg) {

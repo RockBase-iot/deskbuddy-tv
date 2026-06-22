@@ -10,6 +10,7 @@
 #define NVS_KEY_COLOR_CYCLE     "color_cycle"
 #define NVS_KEY_CUSTOM_COLOR    "custom_color"
 #define NVS_KEY_ROUND_EYE       "round_eye"
+#define NVS_KEY_EYE_EXPRESSION  "eye_expr"
 #define NVS_KEY_UNITS_TEMP      "units_temp"
 #define NVS_KEY_UNITS_SPEED     "units_speed"
 #define NVS_KEY_UNITS_PRES      "units_pres"

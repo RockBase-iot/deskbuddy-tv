@@ -14,6 +14,7 @@ def test_platformio_nm_tv_154_environment_exists():
     assert "board = esp32dev" in ini
     assert "-DNMTV154_BOARD" in ini
     assert "-DUSE_HSPI_PORT" in ini
+    assert "board_build.partitions = ota.csv" in ini
     for flag in [
         "-DTFT_WIDTH=240",
         "-DTFT_HEIGHT=240",
@@ -25,6 +26,38 @@ def test_platformio_nm_tv_154_environment_exists():
         "-DLOAD_GLCD=1",
     ]:
         assert flag in ini
+
+
+def test_ota_partition_table_and_config_portal_ota():
+    partition = read("ota.csv")
+    web_config_h = read("src/app/web/web_config.h")
+    web_config_cpp = read("src/app/web/web_config.cpp")
+    form = read("src/app/web/config_form.cpp")
+    main = read("src/main.cpp")
+    version = read("src/version.h")
+
+    for token in [
+        "ota_0",
+        "ota_1",
+        "0x180000",
+        "littlefs",
+    ]:
+        assert token in partition
+    assert "DESKBUDDY_VERSION" in version
+    assert "DESKBUDDY_BUILD" in version
+    assert "Update.h" in web_config_cpp
+    assert "Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)" in web_config_cpp
+    assert "Update.write(data, len)" in web_config_cpp
+    assert "Update.end(true)" in web_config_cpp
+    assert '"/ota"' in web_config_cpp
+    assert '"/api/ota"' in web_config_cpp
+    assert "otaProgress" in web_config_h
+    assert "otaInProgress" in web_config_h
+    assert "OTA Update" in form
+    assert "Firmware .bin" in form
+    assert "DESKBUDDY_VERSION" in form
+    assert "DESKBUDDY_VERSION" in main
+    assert "OTA Updating" in main
 
 
 def test_extracted_modules_have_local_dependencies():
@@ -141,7 +174,8 @@ def test_config_portal_status_screen_persists_with_countdown():
         '"WiFi Config"',
         '"SSID: DeskBuddy"',
         '"AP:"',
-        '"180s"',
+        '"%us"',
+        "drawConfigCountdown",
         '"Long press exit"',
         "WiFi.softAPIP()",
         "wifiConnected = false",
@@ -157,7 +191,8 @@ def test_config_portal_status_screen_persists_with_countdown():
     assert "WiFi.localIP()" not in main.split("static void drawConfigPortalStatus", 1)[1].split("static void refreshWeatherNow", 1)[0]
     assert "if (configModeActive)" in main
     assert "drawConfigPortalStatus(now)" in main
-    assert "touch.wasConfigPress()" in main.split("if (configModeActive)", 1)[1].split("delay(50);", 1)[0]
+    config_mode_body = main.split("if (configModeActive)", 1)[1].split("if (touch.wasSingleTap())", 1)[0]
+    assert "touch.wasConfigPress()" in config_mode_body
     assert "return;" in main.split("if (configModeActive)", 1)[1].split("syncNetworkServicesIfReady", 1)[0]
     sync_body = main.split("static void syncNetworkServicesIfReady()", 1)[1].split("void setup()", 1)[0]
     assert "if (!configModeActive && portalStarted && configPortal.isRunning())" in sync_body
@@ -182,6 +217,109 @@ def test_eyes_animation_has_blink_state():
     assert "_blinkUntilMs" in pages_h
     assert "drawEyelid" in pages_cpp
     assert "random(" in pages_cpp
+
+
+def test_eye_expressions_and_config_page_refresh_are_stable():
+    config_h = read("src/config/app_config.h")
+    config_cpp = read("src/config/app_config.cpp")
+    nvs = read("src/config/nvs_table.h")
+    pages_h = read("src/ui/pages.h")
+    pages_cpp = read("src/ui/pages.cpp")
+    main = read("src/main.cpp")
+    version = read("src/version.h")
+
+    for token in [
+        "Normal = 0",
+        "Round",
+        "Heart",
+        "Star",
+        "Sleep",
+        "Angry",
+        "eyeExpression",
+    ]:
+        assert token in config_h or token in pages_h or token in pages_cpp
+    assert "Happy" not in pages_h
+    for token in [
+        "EyeExpression::Round",
+        "EyeExpression::Heart",
+        "EyeExpression::Star",
+        "EyeExpression::Sleep",
+        "EyeExpression::Angry",
+    ]:
+        assert token in pages_cpp
+    assert "NVS_KEY_EYE_EXPRESSION" in nvs
+    assert "prefs.getUChar(NVS_KEY_EYE_EXPRESSION" in config_cpp
+    assert "prefs.putUChar(NVS_KEY_EYE_EXPRESSION" in config_cpp
+    assert "drawHeart" in pages_cpp
+    assert "drawStar" in pages_cpp
+    assert "drawSleepEye" in pages_cpp
+    assert "drawAngryBrow" in pages_cpp
+    assert "drawHappyEye" not in pages_cpp
+    assert "EXPRESSION_COUNT = 6" in main
+    assert "config.eyeExpression = (config.eyeExpression + 1) % EXPRESSION_COUNT" in main
+    assert 'DESKBUDDY_VERSION "0.3.2"' in version
+    assert "lastConfigStaticDrawMs" in main
+    assert "drawConfigPortalStatic" in main
+    assert "drawConfigCountdown" in main
+    assert "fillRect(70, 186, 100, 40, TFT_BLACK)" in main
+    config_status_body = main.split("static void drawConfigPortalStatus", 1)[1].split("static void drawOtaStatus", 1)[0]
+    assert "needsRedraw = false;" in config_status_body
+
+
+def test_eye_expressions_keep_pupils_blink_and_animation():
+    pages_h = read("src/ui/pages.h")
+    pages_cpp = read("src/ui/pages.cpp")
+    draw_eyes = pages_cpp.split("void Pages::drawEyes", 1)[1].split("void Pages::drawExpressionPupil", 1)[0]
+
+    for token in [
+        "drawExpressionPupil",
+        "drawHeartPupil",
+        "drawStarPupil",
+        "drawSleepEye",
+        "sleepPhase",
+        "drawSleepZ",
+        "FACE_W",
+        "FACE_H",
+    ]:
+        assert token in pages_h or token in pages_cpp
+
+    for expression in [
+        "EyeExpression::Heart",
+        "EyeExpression::Star",
+    ]:
+        if expression in draw_eyes:
+            branch = draw_eyes.split(expression, 1)[1].split("EyeExpression::", 1)[0]
+            assert "return;" not in branch
+
+    assert "drawExpressionPupil(" in draw_eyes
+    assert "if (blinking)" in draw_eyes
+    assert "drawEyelid(x, y, 34)" in draw_eyes
+    assert "offX" in draw_eyes
+    assert "offY" in draw_eyes
+    assert "_eyeSprite.fillSprite(TFT_BLACK)" in draw_eyes
+    assert "_eyeSprite.pushSprite(FACE_X, FACE_Y)" in draw_eyes
+    assert "_tft.fillRect(0, 38, 240, 132, TFT_BLACK)" not in draw_eyes
+    assert "drawSleepZ(_eyeSprite" in draw_eyes
+    assert "drawAngryBrow(_eyeSprite" in draw_eyes
+    heart_body = pages_cpp.split("void Pages::drawHeart(TFT_eSprite", 1)[1].split("void Pages::drawStar(TFT_eSprite", 1)[0]
+    star_body = pages_cpp.split("void Pages::drawStar(TFT_eSprite", 1)[1].split("void Pages::drawSleepEye", 1)[0]
+    assert "drawFastHLine" in heart_body
+    assert "fillTriangle(cx, cy" in star_body
+
+
+def test_config_portal_entry_does_not_redraw_eyes_over_status():
+    main = read("src/main.cpp")
+
+    manual_entry = main.split("if (touch.wasConfigPress())", 1)[1].split("if (!wifiConnected", 1)[0]
+    assert "startConfigPortalIfNeeded()" in manual_entry
+    assert "return;" in manual_entry
+
+    auto_entry = main.split("if (!wifiConnected && !portalStarted && !configPortalTimedOut)", 1)[1].split("syncNetworkServicesIfReady", 1)[0]
+    assert "startConfigPortalIfNeeded()" in auto_entry
+    assert "return;" in auto_entry
+
+    start_body = main.split("static void startConfigPortalIfNeeded()", 1)[1].split("static void tryConnectWifi", 1)[0]
+    assert "hal.display().fillScreen(TFT_BLACK)" in start_body
 
 
 def test_info_pages_use_240x240_safe_content_area():
@@ -394,6 +532,7 @@ def test_config_form_has_location_and_time_shortcuts():
 if __name__ == "__main__":
     tests = [
         test_platformio_nm_tv_154_environment_exists,
+        test_ota_partition_table_and_config_portal_ota,
         test_extracted_modules_have_local_dependencies,
         test_open_meteo_model_supports_requested_pages,
         test_config_model_matches_deskbuddy_requirements,
@@ -403,6 +542,9 @@ if __name__ == "__main__":
         test_config_portal_does_not_block_main_ui_loop,
         test_config_portal_status_screen_persists_with_countdown,
         test_eyes_animation_has_blink_state,
+        test_eye_expressions_and_config_page_refresh_are_stable,
+        test_eye_expressions_keep_pupils_blink_and_animation,
+        test_config_portal_entry_does_not_redraw_eyes_over_status,
         test_info_pages_use_240x240_safe_content_area,
         test_info_page_titles_are_large_and_centered_like_deskbuddy,
         test_hourly_graph_has_visible_text_labels,

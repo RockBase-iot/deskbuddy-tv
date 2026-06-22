@@ -18,6 +18,8 @@ void loadAppConfig(AppConfig &cfg) {
     cfg.colorCycleMode = prefs.getBool(NVS_KEY_COLOR_CYCLE, cfg.colorCycleMode);
     cfg.customColor565 = prefs.getUShort(NVS_KEY_CUSTOM_COLOR, cfg.customColor565);
     cfg.roundEyeMode = prefs.getBool(NVS_KEY_ROUND_EYE, cfg.roundEyeMode);
+    cfg.eyeExpression = prefs.getUChar(NVS_KEY_EYE_EXPRESSION, cfg.roundEyeMode ? 1 : cfg.eyeExpression);
+    if (cfg.eyeExpression > 5) cfg.eyeExpression = 0;
     cfg.unitsTemp = prefs.getString(NVS_KEY_UNITS_TEMP, cfg.unitsTemp);
     cfg.unitsSpeed = prefs.getString(NVS_KEY_UNITS_SPEED, cfg.unitsSpeed);
     cfg.unitsPres = prefs.getString(NVS_KEY_UNITS_PRES, cfg.unitsPres);
@@ -42,6 +44,7 @@ void saveAppConfig(const AppConfig &cfg) {
     prefs.putBool(NVS_KEY_COLOR_CYCLE, cfg.colorCycleMode);
     prefs.putUShort(NVS_KEY_CUSTOM_COLOR, cfg.customColor565);
     prefs.putBool(NVS_KEY_ROUND_EYE, cfg.roundEyeMode);
+    prefs.putUChar(NVS_KEY_EYE_EXPRESSION, cfg.eyeExpression);
     prefs.putString(NVS_KEY_UNITS_TEMP, cfg.unitsTemp);
     prefs.putString(NVS_KEY_UNITS_SPEED, cfg.unitsSpeed);
     prefs.putString(NVS_KEY_UNITS_PRES, cfg.unitsPres);

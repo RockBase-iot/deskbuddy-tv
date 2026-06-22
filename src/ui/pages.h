@@ -14,6 +14,15 @@ enum class Page : uint8_t {
     Count
 };
 
+enum class EyeExpression : uint8_t {
+    Normal = 0,
+    Round,
+    Heart,
+    Star,
+    Sleep,
+    Angry,
+};
+
 class Pages {
 public:
     explicit Pages(TFT_eSPI &display) : _tft(display), _eyeSprite(&display) {}
@@ -58,6 +67,15 @@ private:
     void drawPageIndicator(Page page, const AppConfig &cfg);
     bool shouldDrawInfo(Page page, bool needsRedraw, uint32_t intervalMs);
     void drawEyes(const AppConfig &cfg, float angle);
+    void drawExpressionPupil(TFT_eSprite &sprite, EyeExpression expression,
+                             int16_t cx, int16_t cy, uint16_t color);
+    void drawHeartPupil(TFT_eSprite &sprite, int16_t cx, int16_t cy, uint16_t color);
+    void drawStarPupil(TFT_eSprite &sprite, int16_t cx, int16_t cy, uint16_t color);
+    void drawHeart(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t size, uint16_t color);
+    void drawStar(TFT_eSprite &sprite, int16_t cx, int16_t cy, int16_t radius, uint16_t color);
+    void drawSleepEye(TFT_eSprite &sprite, int16_t x, int16_t y, uint16_t color, float sleepPhase);
+    void drawSleepZ(TFT_eSprite &sprite, int16_t x, int16_t y, float sleepPhase, uint16_t color);
+    void drawAngryBrow(TFT_eSprite &sprite, int16_t x, int16_t y, bool left, uint16_t color);
     void drawClock(const AppConfig &cfg);
     void drawCurrentWeather(const AppConfig &cfg, const WeatherData &weather);
     void drawForecastIcon(int code, int16_t x, int16_t y, uint16_t color);

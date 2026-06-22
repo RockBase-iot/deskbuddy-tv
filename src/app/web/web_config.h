@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Arduino.h>
+
 // WebConfig — captive-portal / AP-mode configuration web server.
 //
 // Start the server when no WiFi credentials are available or the user
@@ -18,4 +20,6 @@ public:
     void stop();
 
     bool isRunning() const;
+    bool otaInProgress() const;
+    uint8_t otaProgress() const;
 };

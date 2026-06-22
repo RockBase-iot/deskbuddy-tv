@@ -1,6 +1,7 @@
 #include "config_form.h"
 
 #include "config/nvs_table.h"
+#include "version.h"
 
 static String htmlEscape(const String &in) {
     String out;
@@ -139,7 +140,15 @@ String renderConfigForm(const AppConfig &cfg, const char *message) {
     html += F("</select><label>Custom color</label><input name='custom_color' type='color' value='");
     html += rgb565ToHtml(cfg.customColor565);
     html += F("'><button type='submit'>Save and restart</button></form>");
-    html += F("<p class='hint'>JSON API: GET/POST /api/config, POST /api/system/restart.</p>");
+    html += F("<h2>OTA Update</h2><form method='post' action='/api/ota' enctype='multipart/form-data'>"
+              "<label>Firmware .bin</label><input name='firmware' type='file' accept='.bin,application/octet-stream'>"
+              "<button type='submit'>Upload firmware</button></form>"
+              "<p class='hint'>OTA is available only in WiFi Config mode. Serial upload remains supported.</p>");
+    html += F("<p class='hint'>Device version: ");
+    html += DESKBUDDY_VERSION;
+    html += F(" / ");
+    html += DESKBUDDY_BUILD;
+    html += F("</p><p class='hint'>JSON API: GET/POST /api/config, POST /api/system/restart.</p>");
     html += F("<script>"
               "const locationPresets=document.getElementById('locationPreset');"
               "const citySearch=document.getElementById('citySearch');"
